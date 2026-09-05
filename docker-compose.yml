@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hotdrop_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-hotdrop}
+      POSTGRES_USER: ${DB_USER:-hotdrop}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hotdrop_secret}
+    ports:
+      - "${DB_PORT:-5436}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-hotdrop} -d ${DB_NAME:-hotdrop}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotdrop_app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8081}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-hotdrop}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-hotdrop}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-hotdrop_secret}
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      ADMISSION_BATCH_SIZE: ${ADMISSION_BATCH_SIZE:-50}
+      ADMISSION_VALIDITY_SECONDS: ${ADMISSION_VALIDITY_SECONDS:-120}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -25,3 +25,8 @@ out/
 ### Environment & Secrets ###
 .env
 *.log
+
+### Local Planning Notes ###
+*plan*.md
+agent-plan.md
+flash-sale-platform-plan.md

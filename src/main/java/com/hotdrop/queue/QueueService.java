@@ -82,4 +82,36 @@ public class QueueService {
                 secondsUntilSale
         );
     }
+
+    @Transactional(readOnly = true)
+    public com.hotdrop.queue.dto.QueueStatusResponse getQueueStatus(Long eventId, Long userId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NoSuchElementException("Event not found with id: " + eventId));
+
+        QueueEntry entry = queueEntryRepository.findByEventIdAndUserId(eventId, userId)
+                .orElseThrow(() -> new NoSuchElementException("User is not in the queue for event: " + eventId));
+
+        long totalInQueue = queueEntryRepository.countByEventId(eventId);
+        return com.hotdrop.queue.dto.QueueStatusResponse.fromEntity(entry, totalInQueue, Instant.now());
+    }
+
+    @Transactional
+    public boolean finalizeQueue(Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NoSuchElementException("Event not found with id: " + eventId));
+
+        if (event.getQueueFinalizedAt() != null || event.getStatus() == EventStatus.CANCELLED) {
+            return false;
+        }
+
+        queueEntryRepository.randomizeWaitingQueue(eventId);
+
+        Instant now = Instant.now();
+        event.setQueueFinalizedAt(now);
+        if (event.getStatus() == EventStatus.UPCOMING) {
+            event.setStatus(EventStatus.LIVE);
+        }
+        eventRepository.save(event);
+        return true;
+    }
 }

@@ -30,3 +30,9 @@ out/
 *plan*.md
 agent-plan.md
 flash-sale-platform-plan.md
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+

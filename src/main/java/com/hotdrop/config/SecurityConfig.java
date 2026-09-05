@@ -62,7 +62,21 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**", "/health", "/auth/**", "/error").permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/assets/**",
+                                "/favicon.ico",
+                                "/waiting-room/**",
+                                "/queue/**",
+                                "/checkout/**",
+                                "/my-bookings",
+                                "/admin-dashboard",
+                                "/actuator/**",
+                                "/health",
+                                "/auth/**",
+                                "/error"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/events/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

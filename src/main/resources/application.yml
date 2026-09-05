@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: hotdrop
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/hotdrop}
+    username: ${SPRING_DATASOURCE_USERNAME:hotdrop}
+    password: ${SPRING_DATASOURCE_PASSWORD:hotdrop_secret}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+hotdrop:
+  jwt:
+    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  queue:
+    admission-batch-size: ${ADMISSION_BATCH_SIZE:50}
+    admission-validity-seconds: ${ADMISSION_VALIDITY_SECONDS:120}
+    admission-poll-rate-ms: ${ADMISSION_POLL_RATE_MS:3000}
+    status-scheduler-rate-ms: ${STATUS_SCHEDULER_RATE_MS:2000}

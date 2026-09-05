@@ -34,7 +34,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       }
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please check credentials.');
+      if (err.message === 'Bad credentials' || err.status === 401) {
+        setError('Invalid credentials (HTTP 401). Use the quick-fill Buyer/Admin buttons below or create a new account.');
+      } else {
+        setError(err.message || 'Authentication failed. Please check credentials.');
+      }
     } finally {
       setLoading(false);
     }

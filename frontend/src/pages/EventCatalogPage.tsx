@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { EventItem, EventStatus } from '../types';
 import { api } from '../services/api';
 import { Countdown } from '../components/Countdown';
+import { formatToIstDateTime } from '../utils/dateTime';
 import { Flame, Clock, Users, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface EventCatalogPageProps {
@@ -245,11 +246,15 @@ export const EventCatalogPage: React.FC<EventCatalogPageProps> = ({ navigate }) 
                           fontSize: '11px',
                           color: 'var(--text-muted)',
                           marginBottom: '6px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
                         }}
                       >
-                        Drop Begins In:
+                        <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>Drop Begins:</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-main)', fontSize: '11px' }}>
+                          {formatToIstDateTime(event.saleStartTime)}
+                        </span>
                       </div>
                       <Countdown targetDate={event.saleStartTime} onExpire={fetchEvents} />
                     </div>

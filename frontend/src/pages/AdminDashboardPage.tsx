@@ -12,7 +12,17 @@ import {
   XCircle,
   RefreshCw,
   ArrowLeft,
+  Clock,
 } from 'lucide-react';
+import {
+  formatToIstDateTime,
+  getNowInIstInputString,
+  getTomorrowInIstInputString,
+  istDateTimeInputToIso,
+  isFutureIstDateTime,
+  getRelativeTimeFromIstInput,
+  IST_LABEL,
+} from '../utils/dateTime';
 
 interface AdminDashboardPageProps {
   navigate: (path: string) => void;
@@ -32,7 +42,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [totalTickets, setTotalTickets] = useState(50);
-  const [saleStartMinutesFromNow, setSaleStartMinutesFromNow] = useState(2);
+  const [saleStartDateTime, setSaleStartDateTime] = useState<string>(() => getNowInIstInputString(15));
   const [waitingRoomOffsetMinutes, setWaitingRoomOffsetMinutes] = useState(5);
 
   const loadData = async () => {
@@ -63,8 +73,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
     setSuccess(null);
     setCreating(true);
 
+    if (!isFutureIstDateTime(saleStartDateTime)) {
+      setError('Sale start time must be in the future (IST). Please select an upcoming date and time.');
+      setCreating(false);
+      return;
+    }
+
     try {
-      const saleStartTime = new Date(Date.now() + saleStartMinutesFromNow * 60 * 1000).toISOString();
+      const saleStartTime = istDateTimeInputToIso(saleStartDateTime);
       const waitingRoomOpenOffsetSeconds = waitingRoomOffsetMinutes * 60;
 
       await api.createEvent({
@@ -75,9 +91,10 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
         waitingRoomOpenOffsetSeconds,
       });
 
-      setSuccess(`Flash drop "${name}" successfully scheduled!`);
+      setSuccess(`Flash drop "${name}" successfully scheduled for ${formatToIstDateTime(saleStartTime)}!`);
       setName('');
       setDescription('');
+      setSaleStartDateTime(getNowInIstInputString(15));
       loadData();
     } catch (err: any) {
       setError(err.message || 'Failed to create event.');
@@ -224,7 +241,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
                     <th style={{ padding: '10px 8px' }}>Name</th>
                     <th style={{ padding: '10px 8px' }}>Status</th>
                     <th style={{ padding: '10px 8px' }}>Claimed</th>
-                    <th style={{ padding: '10px 8px' }}>Starts At</th>
+                    <th style={{ padding: '10px 8px' }}>Starts At (IST)</th>
                     <th style={{ padding: '10px 8px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -239,8 +256,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
                       <td style={{ padding: '12px 8px', fontFamily: 'var(--font-mono)' }}>
                         {evt.ticketsSold} / {evt.totalTickets}
                       </td>
-                      <td style={{ padding: '12px 8px', color: 'var(--text-muted)' }}>
-                        {new Date(evt.saleStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <td style={{ padding: '12px 8px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                        {formatToIstDateTime(evt.saleStartTime)}
                       </td>
                       <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
@@ -323,18 +340,94 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                Starts in (minutes from now)
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  Sale Start Date & Time
+                </label>
+                <span
+                  className="badge"
+                  style={{
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    color: '#F59E0B',
+                    fontSize: '10px',
+                    padding: '2px 8px',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                  }}
+                >
+                  <Clock size={10} style={{ marginRight: '3px' }} />
+                  {IST_LABEL}
+                </span>
+              </div>
               <input
-                type="number"
-                min={1}
-                max={1440}
+                type="datetime-local"
                 required
-                style={{ width: '100%' }}
-                value={saleStartMinutesFromNow}
-                onChange={(e) => setSaleStartMinutesFromNow(parseInt(e.target.value) || 1)}
+                min={getNowInIstInputString(1)}
+                style={{
+                  width: '100%',
+                  fontSize: '13px',
+                  fontFamily: 'var(--font-mono)',
+                  padding: '10px 12px',
+                }}
+                value={saleStartDateTime}
+                onChange={(e) => setSaleStartDateTime(e.target.value)}
               />
+
+              {/* Quick Preset Buttons */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', alignSelf: 'center', marginRight: '2px' }}>
+                  Presets:
+                </span>
+                {[
+                  { label: '+2m', mins: 2 },
+                  { label: '+5m', mins: 5 },
+                  { label: '+15m', mins: 15 },
+                  { label: '+1h', mins: 60 },
+                  { label: '+3h', mins: 180 },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setSaleStartDateTime(getNowInIstInputString(preset.mins))}
+                    className="btn btn-secondary"
+                    style={{ padding: '3px 8px', fontSize: '11px' }}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSaleStartDateTime(getTomorrowInIstInputString(10, 0))}
+                  className="btn btn-secondary"
+                  style={{ padding: '3px 8px', fontSize: '11px' }}
+                >
+                  Tomorrow 10 AM
+                </button>
+              </div>
+
+              {/* Live Preview Box */}
+              {saleStartDateTime && (
+                <div
+                  style={{
+                    marginTop: '8px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: isFutureIstDateTime(saleStartDateTime)
+                      ? 'var(--bg-secondary)'
+                      : 'var(--danger-bg)',
+                    border: `1px solid ${
+                      isFutureIstDateTime(saleStartDateTime) ? 'var(--border-color)' : 'rgba(239, 68, 68, 0.4)'
+                    }`,
+                    fontSize: '12px',
+                    color: isFutureIstDateTime(saleStartDateTime) ? 'var(--text-main)' : '#F87171',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-muted)' }}>Scheduled (IST): </span>
+                  <strong>{formatToIstDateTime(istDateTimeInputToIso(saleStartDateTime))}</strong>{' '}
+                  <span style={{ color: isFutureIstDateTime(saleStartDateTime) ? '#10B981' : '#EF4444' }}>
+                    ({getRelativeTimeFromIstInput(saleStartDateTime)})
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>

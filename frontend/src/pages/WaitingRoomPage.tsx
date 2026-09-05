@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Countdown } from '../components/Countdown';
 import { AuthModal } from '../components/AuthModal';
+import { formatToIstDateTime } from '../utils/dateTime';
 import { Clock, ShieldCheck, Shuffle, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface WaitingRoomPageProps {
@@ -160,7 +161,7 @@ export const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ eventId, navig
               style={{
                 fontSize: '12px',
                 color: 'var(--text-muted)',
-                marginBottom: '12px',
+                marginBottom: '4px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
                 fontWeight: 600,
@@ -168,6 +169,19 @@ export const WaitingRoomPage: React.FC<WaitingRoomPageProps> = ({ eventId, navig
             >
               Sale Starts In:
             </div>
+            {event && (
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--primary)',
+                  marginBottom: '14px',
+                  fontWeight: 600,
+                }}
+              >
+                {formatToIstDateTime(event.saleStartTime)}
+              </div>
+            )}
             {event && (
               <Countdown
                 targetDate={event.saleStartTime}

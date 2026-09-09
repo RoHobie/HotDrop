@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface QueueEntryRepository extends JpaRepository<QueueEntry, Long> {
+public interface QueueEntryRepository extends JpaRepository<QueueEntry, Long>, QueueEntryRepositoryCustom {
 
     Optional<QueueEntry> findByEventIdAndUserId(Long eventId, Long userId);
 
@@ -23,20 +23,6 @@ public interface QueueEntryRepository extends JpaRepository<QueueEntry, Long> {
 
     @Query("SELECT COALESCE(MAX(q.queuePosition), 0) FROM QueueEntry q WHERE q.eventId = :eventId")
     long findMaxQueuePositionByEventId(@Param("eventId") Long eventId);
-
-    @Modifying
-    @Query(value = """
-        WITH shuffled AS (
-            SELECT id, ROW_NUMBER() OVER (ORDER BY random()) as pos
-            FROM queue_entries
-            WHERE event_id = :eventId AND status = 'WAITING'
-        )
-        UPDATE queue_entries q
-        SET queue_position = s.pos, status = 'QUEUED'
-        FROM shuffled s
-        WHERE q.id = s.id
-        """, nativeQuery = true)
-    int randomizeWaitingQueue(@Param("eventId") Long eventId);
 
     @Query(value = """
         SELECT id FROM queue_entries

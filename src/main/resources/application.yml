@@ -7,15 +7,22 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:}
     hikari:
       maximum-pool-size: 20
-      minimum-idle: 5
+      minimum-idle: 1
       idle-timeout: 300000
       connection-timeout: 20000
+  threads:
+    virtual:
+      enabled: true
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
   h2:
     console:
       enabled: ${H2_CONSOLE_ENABLED:false}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     open-in-view: false
     show-sql: false
   flyway:
